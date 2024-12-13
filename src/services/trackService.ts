@@ -1,13 +1,13 @@
 import { db } from '../config/firebase';
 import { 
   collection, 
-  addDoc, 
   updateDoc, 
   deleteDoc, 
   doc, 
   getDocs,
   query,
-  orderBy
+  orderBy,
+  setDoc
 } from 'firebase/firestore';
 import { Track, TrackFormData } from '../types/track';
 import { fetchSpotifyTrack } from '../utils/spotify';
@@ -33,18 +33,26 @@ export const trackService = {
     if (!spotifyData) {
       throw new Error('Invalid Spotify URL');
     }
-
-    const newTrack: Omit<Track, 'id'> = {
-      ...spotifyData,
+  
+    const trackId = spotifyData.id;
+  
+    const newTrack: Track = {
+      id: trackId,
+      title: spotifyData.title,
+      artist: spotifyData.artist,
+      albumArt: spotifyData.albumArt,
+      spotifyUrl: formData.spotifyUrl,
       key: formData.key,
       timeSignature: formData.timeSignature,
       genre: formData.genre,
       tempo: formData.tempo,
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
     };
-
-    const docRef = await addDoc(collection(db, COLLECTION_NAME), newTrack);
-    return { ...newTrack, id: docRef.id };
+  
+    const docRef = doc(db, COLLECTION_NAME, trackId);
+    await setDoc(docRef, newTrack);
+  
+    return newTrack;
   },
 
   async updateTrack(id: string, formData: TrackFormData): Promise<Track> {
