@@ -95,6 +95,17 @@ function App() {
           <SearchBar onSearch={handleSearch} />
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTracks.map(track => (
+            <TrackCard
+              key={track.id}
+              track={track}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+
         {isFormOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -109,17 +120,6 @@ function App() {
             </div>
           </div>
         )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTracks.map(track => (
-            <TrackCard
-              key={track.id}
-              track={track}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
 
         {filteredTracks.length === 0 && (
           <div className="text-center py-12">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TrackFormData } from '../types/track';
 import { musicalKeys, timeSignatures, genres } from '../data/constants';
+import { getSpotifyEmbedUrl } from '../utils/spotify';
 
 interface TrackFormProps {
   initialData?: TrackFormData;
@@ -12,12 +13,14 @@ export default function TrackForm({ initialData, onSubmit, onCancel }: TrackForm
   const [formData, setFormData] = React.useState<TrackFormData>(
     initialData || {
       spotifyUrl: '',
-      key: '',
+      key: 'C',
       timeSignature: '4/4',
-      genre: '',
+      genre: 'Pop',
       tempo: 120
     }
   );
+
+  const spotifyEmbedUrl = formData.spotifyUrl ? getSpotifyEmbedUrl(formData.spotifyUrl) : "";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +50,20 @@ export default function TrackForm({ initialData, onSubmit, onCancel }: TrackForm
         />
       </div>
 
+      {spotifyEmbedUrl && (
+          <div className="mb-4">
+            <iframe
+              src={spotifyEmbedUrl}
+              width="100%"
+              height="80"
+              allow="encrypted-media"
+              allowTransparency={true}
+              className="rounded-md"
+              title="Spotify Player"
+            ></iframe>
+          </div>
+        )}
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700">Key</label>
@@ -54,7 +71,7 @@ export default function TrackForm({ initialData, onSubmit, onCancel }: TrackForm
             name="key"
             value={formData.key}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-200 p-2"
             required
           >
             <option value="">Select Key</option>
@@ -70,7 +87,7 @@ export default function TrackForm({ initialData, onSubmit, onCancel }: TrackForm
             name="timeSignature"
             value={formData.timeSignature}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 p-2"
             required
           >
             {timeSignatures.map(ts => (
@@ -87,7 +104,7 @@ export default function TrackForm({ initialData, onSubmit, onCancel }: TrackForm
             name="genre"
             value={formData.genre}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-200 p-2"
             required
           >
             <option value="">Select Genre</option>
@@ -106,7 +123,7 @@ export default function TrackForm({ initialData, onSubmit, onCancel }: TrackForm
             onChange={handleChange}
             min="1"
             max="300"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-200 p-2"
             required
           />
         </div>

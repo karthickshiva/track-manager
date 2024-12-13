@@ -11,15 +11,19 @@ interface TrackCardProps {
 export default function TrackCard({ track, onEdit, onDelete }: TrackCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <img 
-        src={track.albumArt} 
-        alt={`${track.title} by ${track.artist}`}
-        className="w-full h-48 object-cover"
-      />
+      <div className="relative aspect-square w-full">
+        <div className="relative w-full h-full overflow-hidden rounded-t-lg">
+          <img
+            src={track.albumArt}
+            alt={`${track.title} by ${track.artist}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-900">{track.title}</h3>
-        <p className="text-gray-600">{track.artist}</p>
-        
+        <h3 className="text-lg font-semibold text-gray-900 truncate">{track.title}</h3>
+        <p className="text-gray-600 truncate">{track.artist}</p>
+
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
           <div className="bg-gray-100 px-3 py-1 rounded-full">
             Key: {track.key}

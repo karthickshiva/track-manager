@@ -67,3 +67,8 @@ export const fetchSpotifyTrack = async (url: string): Promise<SpotifyTrack | nul
     return null;
   }
 };
+
+export const getSpotifyEmbedUrl = (spotifyUrl: string): string => {
+  const trackId = spotifyUrl.split("/track/")[1]?.split("?")[0];
+  return `https://open.spotify.com/embed/track/${trackId}`;
+};

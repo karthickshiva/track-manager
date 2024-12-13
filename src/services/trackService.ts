@@ -34,22 +34,13 @@ export const trackService = {
       throw new Error('Invalid Spotify URL');
     }
   
-    const trackId = spotifyData.id;
-  
     const newTrack: Track = {
-      id: trackId,
-      title: spotifyData.title,
-      artist: spotifyData.artist,
-      albumArt: spotifyData.albumArt,
-      spotifyUrl: formData.spotifyUrl,
-      key: formData.key,
-      timeSignature: formData.timeSignature,
-      genre: formData.genre,
-      tempo: formData.tempo,
+      ...spotifyData,
+      ...formData,
       addedAt: new Date().toISOString(),
     };
   
-    const docRef = doc(db, COLLECTION_NAME, trackId);
+    const docRef = doc(db, COLLECTION_NAME, spotifyData.id);
     await setDoc(docRef, newTrack);
   
     return newTrack;
