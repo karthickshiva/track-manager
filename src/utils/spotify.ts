@@ -63,7 +63,7 @@ export const fetchSpotifyTrack = async (url: string): Promise<SpotifyTrack | nul
       spotifyUrl: url,
     };
   } catch (error) {
-    console.error('Error fetching Spotify track:', error);
+    console.error('Error fetching Spotify track: ', error);
     return null;
   }
 };
