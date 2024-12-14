@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrackFormData } from '../../types/track';
 import { musicalKeys, timeSignatures, genres } from '../../data/constants';
-import { getSpotifyEmbedUrl } from '../../utils/spotify';
+import { getSpotifyEmbedUrl } from '../../services/spotify/spotifyUtils';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
 import { FormField } from '../ui/FormField';
 import { FormSelect } from '../ui/FormSelect';
@@ -19,6 +19,7 @@ export function TrackForm({ initialData, onSubmit, onCancel, isSubmitting = fals
   const [formData, setFormData] = React.useState<TrackFormData>(
     initialData || {
       spotifyUrl: '',
+      youtubeUrl: '',
       key: 'C',
       timeSignature: '4/4',
       genre: 'Pop',
@@ -54,6 +55,16 @@ export function TrackForm({ initialData, onSubmit, onCancel, isSubmitting = fals
         />
       </FormField>
 
+      <FormField label="YouTube URL (Optional)">
+        <FormInput
+          type="url"
+          name="youtubeUrl"
+          value={formData.youtubeUrl || ''}
+          onChange={handleChange}
+          placeholder="https://www.youtube.com/watch?v=..."
+        />
+      </FormField>
+
       {spotifyEmbedUrl && (
         <div className="mb-4">
           <iframe
@@ -61,7 +72,6 @@ export function TrackForm({ initialData, onSubmit, onCancel, isSubmitting = fals
             width="100%"
             height="80"
             allow="encrypted-media"
-            allowTransparency={true}
             className="rounded-md"
             title="Spotify Player"
           />
