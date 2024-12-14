@@ -13,8 +13,10 @@ export interface Track extends SpotifyTrack {
   genre: string;
   tempo: number;
   addedAt: string;
+  youtubeUrl?: string;
 }
 
 export type TrackFormData = Omit<Track, 'id' | 'addedAt' | 'title' | 'artist' | 'album' | 'albumArt'> & {
   spotifyUrl: string;
+  youtubeUrl?: string;
 };
