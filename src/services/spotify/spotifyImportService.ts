@@ -34,73 +34,83 @@ async function fetchTracks(
   options: SpotifyImportOptions,
   onProgress: (progress: ImportProgress) => void
 ): Promise<Track[]> {
-  const accessToken = await getSpotifyAccessToken();
-  const tracks: Track[] = [];
+  try {
+    const accessToken = await getSpotifyAccessToken();
+    const tracks: Track[] = [];
 
-  if (options.type === 'album') {
-    const albumId = extractSpotifyId(options.url, 'album');
-    const albumTracks = await fetchSpotifyAlbumTracks(albumId, accessToken);
-    
-    onProgress({ total: albumTracks.length, current: 0, status: 'Fetching track details...' });
-    
-    for (let i = 0; i < albumTracks.length; i++) {
-      const track = await processTrack(albumTracks[i]);
-      tracks.push(track);
-      onProgress({ 
-        total: albumTracks.length, 
-        current: i + 1, 
-        status: `Processing track ${i + 1} of ${albumTracks.length}...` 
-      });
+    if (options.type === 'album') {
+      const albumId = extractSpotifyId(options.url, 'album');
+      const albumTracks = await fetchSpotifyAlbumTracks(albumId, accessToken);
+      
+      onProgress({ total: albumTracks.length, current: 0, status: 'Fetching track details...' });
+      
+      for (let i = 0; i < albumTracks.length; i++) {
+        const track = await processTrack(albumTracks[i]);
+        tracks.push(track);
+        onProgress({ 
+          total: albumTracks.length, 
+          current: i + 1, 
+          status: `Processing track ${i + 1} of ${albumTracks.length}...` 
+        });
+      }
+    } else {
+      const artistId = extractSpotifyId(options.url, 'artist');
+      const artistTracks = await fetchSpotifyArtistTopTracks(artistId, accessToken);
+      
+      onProgress({ total: artistTracks.length, current: 0, status: 'Fetching track details...' });
+      
+      for (let i = 0; i < artistTracks.length; i++) {
+        const track = await processTrack(artistTracks[i]);
+        tracks.push(track);
+        onProgress({ 
+          total: artistTracks.length, 
+          current: i + 1, 
+          status: `Processing track ${i + 1} of ${artistTracks.length}...` 
+        });
+      }
     }
-  } else {
-    const artistId = extractSpotifyId(options.url, 'artist');
-    const artistTracks = await fetchSpotifyArtistTopTracks(artistId, accessToken);
-    
-    onProgress({ total: artistTracks.length, current: 0, status: 'Fetching track details...' });
-    
-    for (let i = 0; i < artistTracks.length; i++) {
-      const track = await processTrack(artistTracks[i]);
-      tracks.push(track);
-      onProgress({ 
-        total: artistTracks.length, 
-        current: i + 1, 
-        status: `Processing track ${i + 1} of ${artistTracks.length}...` 
-      });
-    }
+
+    return tracks;
+  } catch (error) {
+    console.error('Error fetching tracks:', error);
+    throw new Error('Failed to fetch tracks from Spotify');
   }
-
-  return tracks;
 }
 
 async function saveTracks(
   tracks: Track[],
   onProgress: (progress: ImportProgress) => void
 ): Promise<void> {
-  const batches = [];
-  const batchSize = 500;
+  try {
+    const batches = [];
+    const batchSize = 500;
 
-  onProgress({ total: tracks.length, current: 0, status: 'Saving tracks...' });
+    onProgress({ total: tracks.length, current: 0, status: 'Saving tracks...' });
 
-  for (let i = 0; i < tracks.length; i += batchSize) {
-    const batch = writeBatch(db);
-    const batchTracks = tracks.slice(i, i + batchSize);
+    for (let i = 0; i < tracks.length; i += batchSize) {
+      const batch = writeBatch(db);
+      const batchTracks = tracks.slice(i, i + batchSize);
 
-    batchTracks.forEach(track => {
-      const docRef = doc(db, COLLECTION_NAME, track.id);
-      batch.set(docRef, track);
-    });
+      batchTracks.forEach(track => {
+        const docRef = doc(db, COLLECTION_NAME, track.id);
+        batch.set(docRef, track);
+      });
 
-    batches.push(batch);
-  }
+      batches.push(batch);
+    }
 
-  for (let i = 0; i < batches.length; i++) {
-    await batches[i].commit();
-    const completedTracks = Math.min((i + 1) * batchSize, tracks.length);
-    onProgress({ 
-      total: tracks.length, 
-      current: completedTracks, 
-      status: `Saved ${completedTracks} of ${tracks.length} tracks...` 
-    });
+    for (let i = 0; i < batches.length; i++) {
+      await batches[i].commit();
+      const completedTracks = Math.min((i + 1) * batchSize, tracks.length);
+      onProgress({ 
+        total: tracks.length, 
+        current: completedTracks, 
+        status: `Saved ${completedTracks} of ${tracks.length} tracks...` 
+      });
+    }
+  } catch (error) {
+    console.error('Error saving tracks:', error);
+    throw new Error('Failed to save tracks to database');
   }
 }
 
@@ -109,7 +119,12 @@ export const spotifyImportService = {
     options: SpotifyImportOptions,
     onProgress: (progress: ImportProgress) => void
   ): Promise<void> {
-    const tracks = await fetchTracks(options, onProgress);
-    await saveTracks(tracks, onProgress);
+    try {
+      const tracks = await fetchTracks(options, onProgress);
+      await saveTracks(tracks, onProgress);
+    } catch (error) {
+      console.error('Import failed:', error);
+      throw error;
+    }
   }
 };
