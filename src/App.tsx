@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Track, TrackFormData } from './types/track';
+import { ImportProgress, SpotifyImportOptions } from './types/spotify';
 import { trackService } from './services/trackService';
-import { TrackListItem } from './components/track/TrackListItem';
+import { spotifyImportService } from './services/spotify/spotifyImportService';
+import { useSearch } from './hooks/useSearch';
+import { useLoadingState } from './hooks/useLoadingState';
+import { Modal } from './components/ui/Modal';
 import { TrackForm } from './components/track/TrackForm';
+import { ImportForm } from './components/import/ImportForm';
+import { ImportProgressBar } from './components/import/ImportProgress';
 import { SearchBar } from './components/search/SearchBar';
 import { Header } from './components/layout/Header';
 import { EmptyState } from './components/layout/EmptyState';
-import { Modal } from './components/ui/Modal';
-import { useSearch } from './hooks/useSearch';
-import { useLoadingState } from './hooks/useLoadingState';
+import { TrackListItem } from './components/track/TrackListItem';
 
 export default function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const { searchQuery, setSearchQuery, filteredTracks } = useSearch(tracks);
   const { setLoading: setOperationLoading, isLoading: isOperationLoading } = useLoadingState();
@@ -33,25 +39,35 @@ export default function App() {
     }
   };
 
-  const handleSubmit = async (formData: TrackFormData) => {
-    const operationId = editingTrack?.id || 'new';
-    const operationType = editingTrack ? 'edit' : 'add';
-
+  const handleImport = async (options: SpotifyImportOptions) => {
     try {
-      setOperationLoading(operationId, operationType, true);
+      await spotifyImportService.importFromSpotify(options, setImportProgress);
+      await loadTracks();
+      handleCloseImport();
+    } catch (error) {
+      console.error('Failed to import tracks:', error);
+    } finally {
+      setImportProgress(null);
+    }
+  };
 
+  const handleSubmit = async (formData: TrackFormData) => {
+    try {
       if (editingTrack) {
+        setOperationLoading(editingTrack.id, 'edit', true);
         const updated = await trackService.updateTrack(editingTrack.id, formData);
         setTracks(tracks.map(t => t.id === editingTrack.id ? updated : t));
       } else {
         const newTrack = await trackService.addTrack(formData);
-        setTracks([newTrack, ...tracks]);
+        setTracks([...tracks, newTrack]);
       }
       handleCloseForm();
     } catch (error) {
       console.error('Failed to save track:', error);
     } finally {
-      setOperationLoading(operationId, operationType, false);
+      if (editingTrack) {
+        setOperationLoading(editingTrack.id, 'edit', false);
+      }
     }
   };
 
@@ -79,6 +95,11 @@ export default function App() {
     setEditingTrack(null);
   };
 
+  const handleCloseImport = () => {
+    setIsImportOpen(false);
+    setImportProgress(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -88,36 +109,37 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <Header onAddTrack={() => setIsFormOpen(true)} />
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-4xl mx-auto">
+        <Header 
+          onAddTrack={() => setIsFormOpen(true)} 
+          onImport={() => setIsImportOpen(true)} 
+        />
         
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Search by title, artist, genre, or key..."
+          placeholder="Search tracks by title, artist, genre, or key..."
         />
 
-        {filteredTracks.length > 0 ? (
-          <div className="space-y-4">
-            {filteredTracks.map(track => (
-              <TrackListItem
-                key={track.id}
-                track={track}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                isEditing={isOperationLoading(track.id, 'edit')}
-                isDeleting={isOperationLoading(track.id, 'delete')}
-              />
-            ))}
-          </div>
-        ) : (
+        <div className="space-y-4">
+          {filteredTracks.map(track => (
+            <TrackListItem
+              key={track.id}
+              track={track}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              isEditing={isOperationLoading(track.id, 'edit')}
+              isDeleting={isOperationLoading(track.id, 'delete')}
+            />
+          ))}
+        </div>
+
+        {filteredTracks.length === 0 && (
           <EmptyState
-            message={
-              searchQuery
-                ? 'No tracks found matching your search criteria.'
-                : 'No tracks added yet. Click the "Add Track" button to get started!'
-            }
+            message={searchQuery
+              ? 'No tracks found matching your search criteria.'
+              : 'No tracks added yet. Click the "Add Track" button to get started!'}
           />
         )}
 
@@ -130,8 +152,24 @@ export default function App() {
             initialData={editingTrack || undefined}
             onSubmit={handleSubmit}
             onCancel={handleCloseForm}
-            isSubmitting={isOperationLoading(editingTrack?.id || 'new', editingTrack ? 'edit' : 'add')}
+            isSubmitting={editingTrack ? isOperationLoading(editingTrack.id, 'edit') : false}
           />
+        </Modal>
+
+        <Modal
+          isOpen={isImportOpen}
+          onClose={handleCloseImport}
+          title="Import from Spotify"
+        >
+          {importProgress ? (
+            <ImportProgressBar progress={importProgress} />
+          ) : (
+            <ImportForm
+              onSubmit={handleImport}
+              onCancel={handleCloseImport}
+              isSubmitting={!!importProgress}
+            />
+          )}
         </Modal>
       </div>
     </div>
