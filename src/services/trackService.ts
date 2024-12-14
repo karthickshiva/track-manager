@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { Track, TrackFormData } from '../types/track';
 import { fetchSpotifyTrack } from '../utils/spotify';
+import { youtubeService } from './youtubeService';
 
 const COLLECTION_NAME = 'tracks';
 
@@ -34,9 +35,16 @@ export const trackService = {
       throw new Error('Invalid Spotify URL');
     }
   
+    // Only search for YouTube URL if not manually provided
+    const youtubeUrl = formData.youtubeUrl || await youtubeService.findMatchingVideo({
+      title: spotifyData.title,
+      artist: spotifyData.artist
+    });
+  
     const newTrack: Track = {
       ...spotifyData,
       ...formData,
+      youtubeUrl,
       addedAt: new Date().toISOString(),
     };
   
@@ -52,12 +60,19 @@ export const trackService = {
       throw new Error('Invalid Spotify URL');
     }
 
+    // Only search for YouTube URL if not manually provided
+    const youtubeUrl = formData.youtubeUrl || await youtubeService.findMatchingVideo({
+      title: spotifyData.title,
+      artist: spotifyData.artist
+    });
+
     const updatedTrack: Omit<Track, 'id'> = {
       ...spotifyData,
       key: formData.key,
       timeSignature: formData.timeSignature,
       genre: formData.genre,
       tempo: formData.tempo,
+      youtubeUrl,
       addedAt: new Date().toISOString()
     };
 
