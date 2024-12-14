@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-type OperationType = 'add' | 'edit' | 'delete';
+type OperationType = 'add' | 'edit' | 'delete' | 'analyze';
 type LoadingState = Record<string, boolean>;
 
 export function useLoadingState() {
