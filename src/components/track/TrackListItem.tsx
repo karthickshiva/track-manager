@@ -4,6 +4,7 @@ import { TrackMetadata } from './TrackMetadata';
 import { TrackActions } from './TrackActions';
 import { TrackInfo } from './TrackInfo';
 import { TrackArtwork } from './TrackArtwork';
+import { TrackLinks } from './TrackLinks';
 
 interface TrackListItemProps {
   track: Track;
@@ -13,7 +14,13 @@ interface TrackListItemProps {
   isDeleting: boolean;
 }
 
-export function TrackListItem({ track, onEdit, onDelete, isEditing, isDeleting }: TrackListItemProps) {
+export function TrackListItem({
+  track,
+  onEdit,
+  onDelete,
+  isEditing,
+  isDeleting
+}: TrackListItemProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 mb-4">
       <div className="flex items-center p-4">
@@ -43,6 +50,11 @@ export function TrackListItem({ track, onEdit, onDelete, isEditing, isDeleting }
             musicalKey={track.key}
             timeSignature={track.timeSignature}
             tempo={track.tempo}
+          />
+
+          <TrackLinks
+            spotifyUrl={track.spotifyUrl}
+            youtubeUrl={track.youtubeUrl}
           />
         </div>
       </div>
