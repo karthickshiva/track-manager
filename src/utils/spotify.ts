@@ -17,7 +17,6 @@ async function getSpotifyAccessToken(): Promise<string> {
     throw new Error('Missing Spotify credentials');
   }
 
-  // Use btoa for Base64 encoding
   const base64Credentials = btoa(`${clientId}:${clientSecret}`);
 
   const response = await fetch(SPOTIFY_TOKEN_ENDPOINT, {
@@ -59,6 +58,7 @@ export const fetchSpotifyTrack = async (url: string): Promise<SpotifyTrack | nul
       id: track.id,
       title: track.name,
       artist: track.artists[0].name,
+      album: track.album.name,
       albumArt: track.album.images[0]?.url,
       spotifyUrl: url,
     };
