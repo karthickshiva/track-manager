@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Track, TrackFormData } from './types/track';
 import { trackService } from './services/trackService';
-import TrackCard from './components/TrackCard';
-import TrackForm from './components/TrackForm';
-import SearchBar from './components/SearchBar';
+import { TrackListItem } from './components/track/TrackListItem';
+import { TrackForm } from './components/track/TrackForm';
+import { SearchBar } from './components/search/SearchBar';
+import { Header } from './components/layout/Header';
+import { EmptyState } from './components/layout/EmptyState';
+import { Modal } from './components/ui/Modal';
 import { useSearch } from './hooks/useSearch';
-import { Plus } from 'lucide-react';
+import { useLoadingState } from './hooks/useLoadingState';
 
-function App() {
+export default function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(true);
   const { searchQuery, setSearchQuery, filteredTracks } = useSearch(tracks);
+  const { setLoading: setOperationLoading, isLoading: isOperationLoading } = useLoadingState();
 
   useEffect(() => {
     loadTracks();
@@ -30,17 +34,24 @@ function App() {
   };
 
   const handleSubmit = async (formData: TrackFormData) => {
+    const operationId = editingTrack?.id || 'new';
+    const operationType = editingTrack ? 'edit' : 'add';
+
     try {
+      setOperationLoading(operationId, operationType, true);
+
       if (editingTrack) {
         const updated = await trackService.updateTrack(editingTrack.id, formData);
         setTracks(tracks.map(t => t.id === editingTrack.id ? updated : t));
       } else {
         const newTrack = await trackService.addTrack(formData);
-        setTracks([...tracks, newTrack]);
+        setTracks([newTrack, ...tracks]);
       }
       handleCloseForm();
     } catch (error) {
       console.error('Failed to save track:', error);
+    } finally {
+      setOperationLoading(operationId, operationType, false);
     }
   };
 
@@ -48,10 +59,13 @@ function App() {
     if (!confirm('Are you sure you want to delete this track?')) return;
     
     try {
+      setOperationLoading(id, 'delete', true);
       await trackService.deleteTrack(id);
       setTracks(tracks.filter(t => t.id !== id));
     } catch (error) {
       console.error('Failed to delete track:', error);
+    } finally {
+      setOperationLoading(id, 'delete', false);
     }
   };
 
@@ -65,10 +79,6 @@ function App() {
     setEditingTrack(null);
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -78,61 +88,52 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Track Manager</h1>
-          <button
-            onClick={() => setIsFormOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-          >
-            <Plus size={20} />
-            Add Track
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-100">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <Header onAddTrack={() => setIsFormOpen(true)} />
+        
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search by title, artist, genre, or key..."
+        />
 
-        <div className="mb-6">
-          <SearchBar onSearch={handleSearch} />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTracks.map(track => (
-            <TrackCard
-              key={track.id}
-              track={track}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-
-        {isFormOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h2 className="text-xl font-semibold mb-4">
-                {editingTrack ? 'Edit Track' : 'Add New Track'}
-              </h2>
-              <TrackForm
-                initialData={editingTrack || undefined}
-                onSubmit={handleSubmit}
-                onCancel={handleCloseForm}
+        {filteredTracks.length > 0 ? (
+          <div className="space-y-4">
+            {filteredTracks.map(track => (
+              <TrackListItem
+                key={track.id}
+                track={track}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isEditing={isOperationLoading(track.id, 'edit')}
+                isDeleting={isOperationLoading(track.id, 'delete')}
               />
-            </div>
+            ))}
           </div>
+        ) : (
+          <EmptyState
+            message={
+              searchQuery
+                ? 'No tracks found matching your search criteria.'
+                : 'No tracks added yet. Click the "Add Track" button to get started!'
+            }
+          />
         )}
 
-        {filteredTracks.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">
-              {searchQuery
-                ? 'No tracks found matching your search criteria.'
-                : 'No tracks added yet. Click the "Add Track" button to get started!'}
-            </p>
-          </div>
-        )}
+        <Modal
+          isOpen={isFormOpen}
+          onClose={handleCloseForm}
+          title={editingTrack ? 'Edit Track' : 'Add New Track'}
+        >
+          <TrackForm
+            initialData={editingTrack || undefined}
+            onSubmit={handleSubmit}
+            onCancel={handleCloseForm}
+            isSubmitting={isOperationLoading(editingTrack?.id || 'new', editingTrack ? 'edit' : 'add')}
+          />
+        </Modal>
       </div>
     </div>
   );
 }
-
-export default App;
